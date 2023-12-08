@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Daftar Produk</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Daftar Produk</h1>
+        <div class="search-container">
+        <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan nama">
+        <i class="fas fa-search search-icon"></i>
+    </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nama</th>
+                    <th>Harga</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="product-list"></tbody>
+        </table>
+        <button class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tambah Produk</button>
+        <a href="/users/logout" class="btn btn-danger">Logout</a>
+    </div>
+
+    <!-- Modal Create -->
+    <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="createModalLabel">Tambah Produk</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="createForm">
+                <div class="form-group">
+                    <label for="createName">Nama</label>
+                    <input type="text" class="form-control" id="createName" required>
+                </div>
+                <div class="form-group">
+                    <label for="createPrice">Harga</label>
+                    <input type="number" class="form-control" id="createPrice" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </form>
+        </div>
+    </div>
+</div>
+    </div>
+
+    <!-- Modal Edit -->
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">Edit Produk</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editName">Nama</label>
+                    <input type="text" class="form-control" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPrice">Harga</label>
+                    <input type="number" class="form-control" id="editPrice" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+    $(document).ready(function () {
+    loadProducts();
+    
+    function searchProducts(query) {
+    $.ajax({
+        url: `/api/products/search?name=${query}`,
+        type: 'GET',
+        success: function (data) {
+            let productList = $('#product-list');
+            productList.empty();
+            data.forEach(function (product) {
+                productList.append(`<tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>${product.price}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm edit-button" data-id="${product.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-button" data-id="${product.id}">Hapus</button>
+                    </td>
+                </tr>`);
+            	});
+        	}
+    	});
+	}
+
+    $('#searchInput').on('input', function() {
+    	let query = $(this).val();
+    	searchProducts(query);
+	});
+    
+	$('#product-list').on('click', '.edit-button', function () {
+	    let id = $(this).data('id');
+	    $('#editModal').modal('show');
+	
+	    // Masukkan id ke dalam input tersembunyi di dalam formulir
+	    $('#editId').val(id);
+	});
+
+    function loadProducts() {
+        $.ajax({
+            url: '/api/products',
+            type: 'GET',
+            success: function (data) {
+                let productList = $('#product-list');
+                productList.empty();
+                data.forEach(function (product) {
+                    productList.append(`<tr>
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                        <td>${product.price}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm edit-button" data-id="${product.id}">Edit</button>
+                            <button class="btn btn-danger btn-sm delete-button" data-id="${product.id}">Hapus</button>
+                        </td>
+                    </tr>`);
+                });
+            }
+        });
+    }
+
+    $('#createForm').submit(function (event) {
+        event.preventDefault();
+        let name = $('#createName').val();
+        let price = $('#createPrice').val();
+
+        $.ajax({
+            url: '/api/products',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                name: name,
+                price: price
+            }),
+            success: function () {
+                $('#createModal').modal('hide');
+                loadProducts();
+            }
+        });
+    });
+
+    $('#editModal').on('show.bs.modal', function (event) {
+        let button = $(event.relatedTarget);
+        let id = button.data('id');
+
+        $.ajax({
+            url: `/api/products/${id}`,
+            type: 'GET',
+            success: function (product) {
+                $('#editId').val(product.id);
+                $('#editName').val(product.name);
+                $('#editPrice').val(product.price);
+            }
+        });
+    });
+
+    $('#editForm').submit(function (event) {
+        event.preventDefault();
+        let id = $('#editId').val();
+        let name = $('#editName').val();
+        let price = $('#editPrice').val();
+
+        $.ajax({
+            url: `/api/products/${id}`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                id: id,
+                name: name,
+                price: price
+            }),
+            success: function () {
+                $('#editModal').modal('hide');
+                loadProducts();
+            }
+        });
+    });
+
+    $('#product-list').on('click', '.edit-button', function () {
+        let id = $(this).data('id');
+        $('#editModal').modal('show');
+    });
+
+    $('#product-list').on('click', '.delete-button', function () {
+        let id = $(this).data('id');
+        $.ajax({
+            url: `/api/products/${id}`,
+            type: 'DELETE',
+            success: function () {
+                loadProducts();
+            }
+        });
+    });
+});
+
+   
+    </script>
+</body>
+</html>
